@@ -1,15 +1,15 @@
 #!/usr/bin/python
-# 
+#
 # Copyright (c) 2014 Liraz Siri <liraz@turnkeylinux.org>
-# 
+#
 # Ths program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 3 of the License, or (at your option) any later
 # version.
-# 
+#
 """Dump a google calendar
 Options:
-    
+
     --creds=PATH        Where to load/save OAuth2 credentials
                         Defaults: ~/.config/google-calendar-dump.dat
 
@@ -71,9 +71,9 @@ class Calendars:
             # workaround because we don't use argparse
             class cmd_flags:
                 def __init__(self):
-                    self.short_url = True 
+                    self.short_url = True
                     self.noauth_local_webserver = False
-                    self.logging_level = 'ERROR' 
+                    self.logging_level = 'ERROR'
                     self.auth_host_name = 'localhost'
                     self.auth_host_port = [8080, 9090]
 
@@ -102,13 +102,6 @@ class Calendars:
     class Calendar(Map):
         FIELDS = ['id', 'summary', 'description', 'accessRole']
 
-        def __init___(self, **kws):
-
-            for field in FIELDS:
-                self[field] = None
-
-            FixedMap.__init__(self, *args, **kws)
-
     def __init__(self, credsfile=None):
         self.service = self.API.get_service(credsfile)
 
@@ -119,7 +112,7 @@ class Calendars:
         nextpage = None
         while True:
 
-            request = cl.list(fields='items(accessRole,description,id,summary,summaryOverride),nextPageToken', 
+            request = cl.list(fields='items(accessRole,description,id,summary,summaryOverride),nextPageToken',
                               showDeleted=False,
                               pageToken=nextpage)
 
@@ -152,6 +145,7 @@ class Calendars:
         return keywords
 
     def iter_events(self, calendar_id, **kws):
+
         events = self.service.events()
         kws = self.fmt_values(kws)
 
@@ -160,7 +154,7 @@ class Calendars:
 
         nextpage = None
         while True:
-            request = events.list(calendarId=calendar_id, 
+            request = events.list(calendarId=calendar_id,
                                   pageToken=nextpage,
                                   **kws)
 
@@ -196,11 +190,14 @@ def parse_date(s):
 def fmt_date(date):
     return date.isoformat() + "T00:00:00Z"
 
+class Error(Exception):
+    pass
+
 def main():
     credsfile = None
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'h', 
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'h',
                                        ['list-calendars', 'creds='])
     except getopt.GetoptError, e:
         usage(e)
@@ -228,7 +225,7 @@ def main():
             print "%-65s %s" % (calendar.id, calendar.summary)
 
         sys.exit(0)
-            
+
     if len(args) < 1:
         usage()
 
