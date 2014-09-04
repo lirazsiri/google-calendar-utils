@@ -105,27 +105,6 @@ class Calendars:
     def __init__(self, credsfile=None):
         self.service = self.API.get_service(credsfile)
 
-    def iter_calendars(self):
-        cl = self.service.calendarList() # pylint: disable=E1101
-
-        nextpage = None
-        while True:
-
-            request = cl.list(fields='items(accessRole,description,id,summary,summaryOverride),nextPageToken',
-                              showDeleted=False,
-                              pageToken=nextpage)
-
-            response = request.execute()
-
-            items = response.get('items')
-            if items:
-                for item in response['items']:
-                    yield self.Calendar(**item)
-
-            nextpage = response.get('nextPageToken')
-            if not nextpage:
-                break
-
     @property
     def calendars(self):
         return list(self.iter_calendars())
@@ -143,6 +122,23 @@ class Calendars:
 
         return keywords
 
+    @staticmethod
+    def _iter_items(callback, **kwargs):
+        nextPageToken = None
+        while True:
+
+            request = callback(pageToken=nextPageToken, **kwargs)
+            response = request.execute()
+
+            items = response.get('items')
+            if items:
+                for item in response['items']:
+                    yield item
+
+            nextpage = response.get('nextPageToken')
+            if not nextpage:
+                break
+
     def iter_events(self, calendar_id, **kws):
 
         events = self.service.events() # pylint: disable=E1101
@@ -151,22 +147,19 @@ class Calendars:
         if 'maxResults' not in kws:
             kws['maxResults'] = 2500
 
+        return self._iter_items(events.list,
+                                calendarId=calendar_id, **kws)
+
+    def iter_calendars(self):
+        cl = self.service.calendarList() # pylint: disable=E1101
+
         nextpage = None
-        while True:
-            request = events.list(calendarId=calendar_id,
-                                  pageToken=nextpage,
-                                  **kws)
+        for item in self._iter_items(cl.list,
+                                     fields='items(accessRole,description,id,summary,summaryOverride),nextPageToken',
+                                     showDeleted=False):
+            yield self.Calendar(**item)
 
-            response = request.execute()
 
-            items = response.get('items')
-            if items:
-                for event in response['items']:
-                    yield event
-
-            nextpage = response.get('nextPageToken')
-            if not nextpage:
-                break
 
 def usage(e=None):
     if e:
