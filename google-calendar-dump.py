@@ -106,8 +106,7 @@ class Calendars:
         self.service = self.API.get_service(credsfile)
 
     def iter_calendars(self):
-
-        cl = self.service.calendarList()
+        cl = self.service.calendarList() # pylint: disable=E1101
 
         nextpage = None
         while True:
@@ -146,7 +145,7 @@ class Calendars:
 
     def iter_events(self, calendar_id, **kws):
 
-        events = self.service.events()
+        events = self.service.events() # pylint: disable=E1101
         kws = self.fmt_values(kws)
 
         if 'maxResults' not in kws:
