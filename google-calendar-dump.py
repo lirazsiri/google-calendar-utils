@@ -135,8 +135,8 @@ class Calendars:
                 for item in response['items']:
                     yield item
 
-            nextpage = response.get('nextPageToken')
-            if not nextpage:
+            nextPageToken = response.get('nextPageToken')
+            if not nextPageToken:
                 break
 
     def iter_events(self, calendar_id, **kws):
@@ -145,7 +145,7 @@ class Calendars:
         kws = self.fmt_values(kws)
 
         if 'maxResults' not in kws:
-            kws['maxResults'] = 2500
+            kws['maxResults'] = 10
 
         return self._iter_items(events.list,
                                 calendarId=calendar_id, **kws)
