@@ -145,7 +145,7 @@ class Calendars:
         kws = self.fmt_values(kws)
 
         if 'maxResults' not in kws:
-            kws['maxResults'] = 10
+            kws['maxResults'] = 2500
 
         return self._iter_items(events.list,
                                 calendarId=calendar_id, **kws)
