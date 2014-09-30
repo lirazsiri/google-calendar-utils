@@ -20,7 +20,7 @@ class Calendars:
         CLIENT_ID = '202930974095-vds3f7krnef053ibmhojl2ivsqcg3n41.apps.googleusercontent.com'
         CLIENT_SECRET = 'urPmLmos5dw6wekTMfZV2O0z'
 
-        HOME_CREDSFILE = '.config/google-calendar-dump.dat'
+        HOME_CREDSFILE = '.config/google-calendar.dat'
 
         @classmethod
         def _get_credentials(cls, credsfile=None):

@@ -7,35 +7,44 @@
 # Foundation; either version 3 of the License, or (at your option) any later
 # version.
 #
-"""Dump a google calendar
-Options:
+"""Options:
+
+    --edit              Edit events that have changed
 
     --creds=PATH        Where to load/save OAuth2 credentials
                         Defaults: ~/.config/google-calendar-dump.dat
 
 Example usage:
 
-    google-calendar-rewrite-log myemail@gmail.com 2014-1-1
+    google-calendar-events myemail@gmail.com 2014-1-1 2014-1-8 > events.txt
+    sed -i 's/foo/bar/' events.txt
+    cat events.txt | google-calendar-events --edit myemail@gmail.com 2014-1-1 2014-1-8
 
 """
 
 import os.path
 import sys
 import getopt
+import re
 
-import pprint
 import dateutil.parser
 
 from api import Calendars
+from StringIO import StringIO
+
+from collections import namedtuple
 
 def usage(e=None):
     if e:
         print >> sys.stderr, "error: " + str(e)
 
-    print >> sys.stderr, "Syntax: %s" % sys.argv[0]
-    print >> sys.stderr, "List calendar Ids\n"
+    print >> sys.stderr, "Syntax: %s <calendarId> --edit <calendarId> <since-date> <until-date>"  % sys.argv[0]
+    print >> sys.stderr, "Read list of events from stdin and edit those that have changed"
+    print >> sys.stderr
 
-    print >> sys.stderr, "Syntax: %s <calendarId> [ <since-date> <until-date> ]" % sys.argv[0]
+    print >> sys.stderr, "Syntax: %s <calendarId> <since-date> <until-date>" % sys.argv[0]
+    print >> sys.stderr, "Print list of events for manual editing"
+    print >> sys.stderr
     print >> sys.stderr, __doc__.strip()
     sys.exit(1)
 
@@ -52,24 +61,44 @@ def fmt_date(date):
 class Error(Exception):
     pass
 
-def fmt_event(event):
-    args = {}
-    for key in ('id', 'summary'):
-        args[key] = event[key]
+class EventLog:
+    Tuple = namedtuple('Event', ['id', 'colorId', 'summary'])
+    Tuple.from_resource = classmethod(lambda cls, res: cls(res['id'],
+                                                           res.get('colorId', '0'),
+                                                           res['summary']))
 
-    args['colorId'] = event.get('colorId', '0')
+    @staticmethod
+    def fmt(resources):
+        def fmt_event(resource):
+            elt = EventLog.Tuple.from_resource(resource)
 
-    start = event['start']
-    args['start'] = start.get('dateTime') or start.get('date')
+            args = elt.__dict__.copy()
+            args['start'] = resource['start'].get('dateTime') or resource['start'].get('date')
 
-    return "%(id)s %(start)s :: C=%(colorId)s S=%(summary)s" % args
+            return "%(id)s %(start)s :: C=%(colorId)s S=%(summary)s" % args
+
+        sio = StringIO()
+        for resource in resources:
+            print >> sio, fmt_event(resource)
+        return sio.getvalue()
+
+    @staticmethod
+    def parse(log):
+        for line in log.splitlines():
+            m = re.match(r'(\S+)\s.*:: C=(\S+) S=(.*)', line)
+            if not m:
+                continue
+
+            id, colorId, summary = m.groups()
+            yield EventLog.Tuple(id, colorId, summary)
 
 def main():
     credsfile = None
+    opt_edit = False
 
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'h',
-                                       ['creds='])
+                                       ['edit', 'creds='])
     except getopt.GetoptError, e:
         usage(e)
 
@@ -77,13 +106,16 @@ def main():
         if opt == '-h':
             usage()
 
+        elif opt == '--edit':
+            opt_edit = True
+
         elif opt == '--creds':
             if not os.path.isfile(val):
                 fatal("credentials file '%s' does not exist" % val)
 
             credsfile = val
 
-    if len(args) < 1:
+    if len(args) < 3:
         usage()
 
     calendar_id = args[0]
@@ -99,14 +131,18 @@ def main():
     except Error, e:
         fatal(e)
 
-    for event in Calendars(credsfile).iter_events(calendar_id,
-                                                  timeMin=since,
-                                                  timeMax=until,
-                                                  singleEvents=True,
-                                                  showDeleted=False,
-                                                  orderBy='startTime'):
+    cal = Calendars(credsfile)
 
-        print fmt_event(event)
+    events = list(cal.iter_events(calendar_id, timeMin=since,
+                                  timeMax=until,
+                                  singleEvents=True,
+                                  showDeleted=False,
+                                  orderBy='startTime'))
+
+    if opt_edit:
+        print list(EventLog.parse(sys.stdin.read()))
+    else:
+        print EventLog.fmt(events)
 
 if __name__=="__main__":
     main()
