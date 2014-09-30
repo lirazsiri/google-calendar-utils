@@ -15,7 +15,7 @@ Options:
 
 Example usage:
 
-    google-calendar-dump myemail@gmail.com 2014-1-1
+    google-calendar-rewrite-log myemail@gmail.com 2014-1-1
 
 """
 
@@ -32,7 +32,7 @@ def usage(e=None):
     if e:
         print >> sys.stderr, "error: " + str(e)
 
-    print >> sys.stderr, "Syntax: %s --list-calendars" % sys.argv[0]
+    print >> sys.stderr, "Syntax: %s" % sys.argv[0]
     print >> sys.stderr, "List calendar Ids\n"
 
     print >> sys.stderr, "Syntax: %s <calendarId> [ <since-date> <until-date> ]" % sys.argv[0]
@@ -52,16 +52,26 @@ def fmt_date(date):
 class Error(Exception):
     pass
 
+def fmt_event(event):
+    args = {}
+    for key in ('id', 'summary'):
+        args[key] = event[key]
+
+    args['colorId'] = event.get('colorId', '0')
+
+    start = event['start']
+    args['start'] = start.get('dateTime') or start.get('date')
+
+    return "%(id)s %(start)s :: C=%(colorId)s S=%(summary)s" % args
+
 def main():
     credsfile = None
 
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'h',
-                                       ['list-calendars', 'creds='])
+                                       ['creds='])
     except getopt.GetoptError, e:
         usage(e)
-
-    opt_list_calendars = False
 
     for opt, val in opts:
         if opt == '-h':
@@ -72,18 +82,6 @@ def main():
                 fatal("credentials file '%s' does not exist" % val)
 
             credsfile = val
-
-        if opt == '--list-calendars':
-            opt_list_calendars = True
-
-    if opt_list_calendars:
-        if args:
-            usage('--list-calendars accepts no arguments')
-
-        for calendar in Calendars(credsfile).calendars:
-            print "%-65s %s" % (calendar.id, calendar.summary)
-
-        sys.exit(0)
 
     if len(args) < 1:
         usage()
@@ -101,13 +99,14 @@ def main():
     except Error, e:
         fatal(e)
 
-    kws = {
-        'timeMin': since,
-        'timeMax': until
-    }
-    for event in Calendars(credsfile).iter_events(calendar_id, **kws):
-        print
-        pprint.pprint(event)
+    for event in Calendars(credsfile).iter_events(calendar_id,
+                                                  timeMin=since,
+                                                  timeMax=until,
+                                                  singleEvents=True,
+                                                  showDeleted=False,
+                                                  orderBy='startTime'):
+
+        print fmt_event(event)
 
 if __name__=="__main__":
     main()
