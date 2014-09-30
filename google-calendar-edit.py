@@ -32,7 +32,7 @@ import dateutil.parser
 from api import Calendars
 from StringIO import StringIO
 
-from collections import namedtuple
+from fixedmap import FixedMap
 
 def usage(e=None):
     if e:
@@ -62,17 +62,24 @@ class Error(Exception):
     pass
 
 class EventLog:
-    Tuple = namedtuple('Event', ['id', 'colorId', 'summary'])
-    Tuple.from_resource = classmethod(lambda cls, res: cls(res['id'],
-                                                           res.get('colorId', '0'),
-                                                           res['summary']))
+    class Tuple(FixedMap):
+        FIELDS = ['id', 'colorId', 'summary']
+
+        @classmethod
+        def from_resource(cls, res):
+            return cls(res['id'], res.get('colorId', '0'), res['summary'])
+
+        def to_resource(self):
+            d = self.copy()
+            d['colorId'] = self.colorId if self.colorId != '0' else None
+            return d
 
     @staticmethod
     def fmt(resources):
         def fmt_event(resource):
             elt = EventLog.Tuple.from_resource(resource)
 
-            args = elt.__dict__.copy()
+            args = elt.copy()
             args['start'] = resource['start'].get('dateTime') or resource['start'].get('date')
 
             return "%(id)s %(start)s :: C=%(colorId)s S=%(summary)s" % args
@@ -91,6 +98,16 @@ class EventLog:
 
             id, colorId, summary = m.groups()
             yield EventLog.Tuple(id, colorId, summary)
+
+    @staticmethod
+    def changed(orig, edited):
+        orig = dict([ (elt.id, elt) for elt in orig ])
+        changed = []
+        for edit in edited:
+            if edit.id not in orig or edit != orig[edit.id]:
+                changed.append(edit)
+
+        return changed
 
 def main():
     credsfile = None
@@ -132,17 +149,23 @@ def main():
         fatal(e)
 
     cal = Calendars(credsfile)
-
-    events = list(cal.iter_events(calendar_id, timeMin=since,
-                                  timeMax=until,
-                                  singleEvents=True,
-                                  showDeleted=False,
-                                  orderBy='startTime'))
+    cal_events = list(cal.iter_events(calendar_id, timeMin=since,
+                                                   timeMax=until,
+                                                   singleEvents=True,
+                                                   showDeleted=False,
+                                                   orderBy='startTime'))
 
     if opt_edit:
-        print list(EventLog.parse(sys.stdin.read()))
+        edited_events = EventLog.parse(sys.stdin.read())
+        orig_events = [ EventLog.Tuple.from_resource(cal_event) for cal_event in cal_events ]
+
+        changed = EventLog.changed(orig_events, edited_events)
+
+        edited = cal.patch_events(calendar_id, [ change.to_resource() for change in changed ])
+        print EventLog.fmt(edited),
+
     else:
-        print EventLog.fmt(events)
+        print EventLog.fmt(cal_events)
 
 if __name__=="__main__":
     main()
