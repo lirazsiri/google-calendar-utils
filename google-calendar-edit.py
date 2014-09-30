@@ -109,12 +109,18 @@ class EventLog:
 
         return changed
 
-def main():
+class Options:
     credsfile = None
-    opt_edit = False
+    edit = False
+
+    def __repr__(self):
+        return `self.__dict__`
+
+def parse_cli_args(args):
+    options = Options()
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'h',
+        opts, args = getopt.gnu_getopt(args, 'h',
                                        ['edit', 'creds='])
     except getopt.GetoptError, e:
         usage(e)
@@ -124,38 +130,37 @@ def main():
             usage()
 
         elif opt == '--edit':
-            opt_edit = True
+            options.edit = True
 
         elif opt == '--creds':
             if not os.path.isfile(val):
                 fatal("credentials file '%s' does not exist" % val)
 
-            credsfile = val
+            options.credsfile = val
+
+    if len(args) < 3:
+        usage()
+
+    return options, args
+
+def main():
+    options, args = parse_cli_args(sys.argv[1:])
 
     if len(args) < 3:
         usage()
 
     calendar_id = args[0]
+    since = parse_date(args[1])
+    until = parse_date(args[2])
 
-    since = until = None
-    try:
-        if len(args) > 1:
-            since = parse_date(args[1])
-
-        if len(args) > 2:
-            until = parse_date(args[2])
-
-    except Error, e:
-        fatal(e)
-
-    cal = Calendars(credsfile)
+    cal = Calendars(options.credsfile)
     cal_events = list(cal.iter_events(calendar_id, timeMin=since,
                                                    timeMax=until,
                                                    singleEvents=True,
                                                    showDeleted=False,
                                                    orderBy='startTime'))
 
-    if opt_edit:
+    if options.edit:
         edited_events = EventLog.parse(sys.stdin.read())
         orig_events = [ EventLog.Tuple.from_resource(cal_event) for cal_event in cal_events ]
 
