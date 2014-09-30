@@ -122,6 +122,21 @@ class Calendars:
         return self._iter_items(events.list,
                                 calendarId=calendar_id, **kws)
 
+    def patch_events(self, calendar_id, patches):
+        events = self.service.events() # pylint: disable=E1101
+        for patch in patches:
+
+            patch = patch.copy()
+
+            id = patch['id']
+            del patch['id']
+
+            req = events.patch(calendarId=calendar_id,
+                               eventId=id,
+                               body=patch)
+
+            yield req.execute()
+
     def iter_calendars(self):
         cl = self.service.calendarList() # pylint: disable=E1101
 
@@ -129,5 +144,6 @@ class Calendars:
                                      fields='items(accessRole,description,id,summary,summaryOverride),nextPageToken',
                                      showDeleted=False):
             yield self.Calendar(**item)
+
 
 
