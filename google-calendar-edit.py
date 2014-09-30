@@ -9,6 +9,7 @@
 #
 """Options:
 
+    --simulate          Show which changes would be made, but don't edit
     --edit              Edit events that have changed
 
     --creds=PATH        Where to load/save OAuth2 credentials
@@ -77,7 +78,7 @@ class EventLog:
             return d
 
     @staticmethod
-    def fmt(resources):
+    def fmt(arg):
         def fmt_event(resource):
             elt = EventLog.Tuple.from_resource(resource)
 
@@ -86,8 +87,11 @@ class EventLog:
 
             return "%(id)s %(start)s :: C=%(colorId)s S=%(summary)s" % args
 
+        if isinstance(arg, dict):
+            return fmt_event(arg)
+
         sio = StringIO()
-        for resource in resources:
+        for resource in arg:
             print >> sio, fmt_event(resource)
         return sio.getvalue()
 
@@ -113,6 +117,7 @@ class EventLog:
 
 class Options:
     credsfile = None
+    simulate = False
     edit = False
 
     def __repr__(self):
@@ -123,7 +128,7 @@ def parse_cli_args(args):
 
     try:
         opts, args = getopt.gnu_getopt(args, 'h',
-                                       ['edit', 'creds='])
+                                       ['simulate', 'edit', 'creds='])
     except getopt.GetoptError, e:
         usage(e)
 
@@ -139,6 +144,9 @@ def parse_cli_args(args):
                 fatal("credentials file '%s' does not exist" % val)
 
             options.credsfile = val
+
+        elif opt == '--simulate':
+            options.simulate = True
 
     if len(args) < 3:
         usage()
@@ -168,8 +176,13 @@ def main():
 
         changed = EventLog.changed(orig_events, edited_events)
 
-        edited = cal.patch_events(calendar_id, [ change.to_resource() for change in changed ])
-        print EventLog.fmt(edited),
+        if options.simulate:
+            for change in changed:
+                print change
+        else:
+            edited = cal.patch_events(calendar_id, [ change.to_resource() for change in changed ])
+            for edit in edited:
+                print EventLog.fmt(edit)
 
     else:
         print EventLog.fmt(cal_events)
