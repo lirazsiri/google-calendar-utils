@@ -33,6 +33,7 @@ from api import Calendars
 from StringIO import StringIO
 
 from fixedmap import FixedMap
+import string
 
 def usage(e=None):
     if e:
@@ -67,7 +68,8 @@ class EventLog:
 
         @classmethod
         def from_resource(cls, res):
-            return cls(res['id'], res.get('colorId', '0'), res['summary'])
+            summary = filter(lambda c: c in string.printable, res['summary']).strip()
+            return cls(res['id'], res.get('colorId', '0'), summary)
 
         def to_resource(self):
             d = self.copy()
