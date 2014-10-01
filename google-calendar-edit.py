@@ -69,7 +69,8 @@ class EventLog:
 
         @classmethod
         def from_resource(cls, res):
-            summary = filter(lambda c: c in string.printable, res['summary']).strip()
+            summary = res.get('summary', '')
+            summary = filter(lambda c: c in string.printable, summary).strip()
             return cls(res['id'], res.get('colorId', '0'), summary)
 
         def to_resource(self):
