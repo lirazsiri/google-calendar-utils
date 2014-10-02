@@ -1,0 +1,25 @@
+#!/usr/bin/perl -p
+
+sub tag {
+    my $tag = shift;
+    s/$/ #$tag/;
+}
+
+if(!/ S=[LPEMSF]/ && !/#/) { 
+
+    /procrast/ && tag procrast;
+    /routine/ && tag routine;
+    /plan|review/ && tag review;
+    /meditat/i && tag meditate;
+    /\beat\b|meal|breakfast|brunch|lunch|dinner|snack|salad/i && tag meal;
+    /rest|break(?!fast)|relax/ && tag relax;
+    /read up|research|explore/ && tag research;
+    /workout/ && !/pre|post/ && tag workout;
+    /chat with/i && tag social;
+    /cleanup/ && tag housework;
+    /morning/ && tag morning;
+    /night/ && tag night;
+    /woke up.*back.*sleep/ && tag badsleep;
+    /shower|shave/ && tag toilette;
+    /reread|\bread(?! up|er)/ && tag 'read';
+}
