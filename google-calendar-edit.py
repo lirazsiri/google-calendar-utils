@@ -148,6 +148,7 @@ def parse_cli_args(args):
 
         elif opt == '--simulate':
             options.simulate = True
+            options.edit = True
 
     if len(args) < 3:
         usage()
