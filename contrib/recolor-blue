@@ -1,0 +1,10 @@
+#!/usr/bin/perl -p
+
+sub recolor {
+    my $cid = shift;
+    s/:: C=\d+/:: C=$cid/;
+}
+
+if(/blue/) {
+    recolor 1;
+}
