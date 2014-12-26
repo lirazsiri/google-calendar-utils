@@ -17,9 +17,9 @@
 
 Example usage:
 
-    google-calendar-events myemail@gmail.com 2014-1-1 2014-1-8 > events.txt
+    google-calendar-edit myemail@gmail.com 2014-1-1 2014-1-8 > events.txt
     sed -i 's/foo/bar/' events.txt
-    cat events.txt | google-calendar-events --edit myemail@gmail.com 2014-1-1 2014-1-8
+    cat events.txt | google-calendar-edit --edit myemail@gmail.com 2014-1-1 2014-1-8
 
 """
 
