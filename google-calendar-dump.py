@@ -27,6 +27,7 @@ import pprint
 import dateutil.parser
 
 from api import Calendars
+import simplejson
 
 def usage(e=None):
     if e:
@@ -107,7 +108,7 @@ def main():
     }
     for event in Calendars(credsfile).iter_events(calendar_id, **kws):
         print
-        pprint.pprint(event)
+        print simplejson.dumps(event, indent=True)
 
 if __name__=="__main__":
     main()
