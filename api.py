@@ -137,6 +137,15 @@ class Calendars:
 
             yield req.execute()
 
+    def insert_events(self, calendar_id, events):
+        service = self.service.events() # pylint: disable=E1101
+        for event in events:
+
+            req = service.insert(calendarId=calendar_id,
+                                 body=insertfilter(event))
+
+            yield req.execute()
+
     def iter_calendars(self):
         cl = self.service.calendarList() # pylint: disable=E1101
 
@@ -145,5 +154,11 @@ class Calendars:
                                      showDeleted=False):
             yield self.Calendar(**item)
 
+def insertfilter(event):
+    filtered = {}
 
+    for key in ('summary', 'start', 'end', 'colorId', 'description'):
+        if key in event:
+            filtered[key] = event[key]
 
+    return filtered
