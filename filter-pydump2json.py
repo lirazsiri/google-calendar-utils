@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """Convert an old pydump stream into a json stream of events"""
 import sys
-from cStringIO import StringIO
 import simplejson
+from utils import lines2records
 
 def usage(e=None):
     if e:
@@ -11,31 +11,13 @@ def usage(e=None):
     print >> sys.stderr, __doc__.strip()
     sys.exit(1)
 
-def parse(fh):
-    sio = StringIO()
-
-    def fmt(sio):
-        return sio.getvalue().strip()
-
-    for line in fh.readlines():
-        if line.startswith("{"):
-            event = fmt(sio)
-            if event:
-                yield event
-                sio.reset()
-                sio.truncate()
-
-        sio.write(line)
-
-    yield fmt(sio)
-
 def main():
 
     args = sys.argv[1:]
     if args:
         usage()
 
-    for event in parse(sys.stdin):
+    for event in lines2records(sys.stdin):
         event = eval(event)
         print simplejson.dumps(event, indent=True) + "\n"
 
