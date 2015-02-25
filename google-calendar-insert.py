@@ -128,6 +128,11 @@ class Events:
 
         return False
 
+def filter_cancelled(events):
+    for event in events:
+        if event['status'] != 'cancelled':
+            yield event
+
 def filter_duplicates(all_events, events):
     all_events = Events(all_events)
     for event in events:
@@ -162,7 +167,7 @@ def main():
 
     calendar_id = args[0]
 
-    inserted_events = parse_input(sys.stdin)
+    inserted_events = list(filter_cancelled(parse_input(sys.stdin)))
     timeMin, timeMax = get_events_timerange(inserted_events)
 
     cal = Calendars(options.credsfile)
