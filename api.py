@@ -11,14 +11,15 @@ class Map(FixedMap):
     def __init__(self, **kws):
 
         defaults = dict([ (field, None) for field in self.FIELDS ])
+        kws = dict([ (key,val) for key, val in kws.items() if key in self.FIELDS ])
         defaults.update(kws)
 
         FixedMap.__init__(self, **defaults)
 
 class Calendars:
     class API:
-        CLIENT_ID = '202930974095-vds3f7krnef053ibmhojl2ivsqcg3n41.apps.googleusercontent.com'
-        CLIENT_SECRET = 'urPmLmos5dw6wekTMfZV2O0z'
+        CLIENT_ID = os.environ.get('CLIENT_ID', '202930974095-vds3f7krnef053ibmhojl2ivsqcg3n41.apps.googleusercontent.com')
+        CLIENT_SECRET = os.environ.get('CLIENT_SECRET','urPmLmos5dw6wekTMfZV2O0z')
 
         HOME_CREDSFILE = '.config/google-calendar.dat'
 
